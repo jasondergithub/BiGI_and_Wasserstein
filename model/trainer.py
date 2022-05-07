@@ -47,6 +47,7 @@ class DGITrainer(Trainer):
         self.criterion = nn.BCEWithLogitsLoss()
         if opt['cuda']:
             self.model.cuda()
+            self.discriminator.cuda()
             self.criterion.cuda()
         self.optimizer = torch_utils.get_optimizer(opt['optim'], self.model.parameters(), opt['lr'])
         self.rankingLoss = nn.MarginRankingLoss(margin=opt["margin"])
@@ -206,7 +207,7 @@ class DGITrainer(Trainer):
                                             fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated,
                                             relation_UV_adj, relation_VU_adj)
 
-            dgi_loss = -torch.mean(self.discriminator(mixup_real)).cuda() + torch.mean(self.discriminator(mixup_fake)).cuda()
+            dgi_loss = -torch.mean(self.discriminator(mixup_real)) + torch.mean(self.discriminator(mixup_fake))
             loss = (1 - self.opt["lambda"]) * reconstruct_loss + self.opt["lambda"] * dgi_loss
             self.epoch_rec_loss.append((1 - self.opt["lambda"]) * reconstruct_loss.item())
             self.epoch_dgi_loss.append(self.opt["lambda"] * dgi_loss.item())
