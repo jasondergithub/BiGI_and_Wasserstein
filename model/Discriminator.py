@@ -6,7 +6,7 @@ class Mixup_discriminator(nn.Module):
         super(Mixup_discriminator, self).__init__() 
         self.opt = opt     
         self.conv1 = nn.Conv1d(1, 16, 3)
-        self.conv2 = nn.Conv1d(1, 8, 3)
+        self.conv2 = nn.Conv1d(16, 8, 3)
         self.relu = nn.LeakyReLU(0.1)
         self.fc = nn.Linear(8 * (opt["hidden_dim"] - (3-1)*2), 1)
     
