@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 
 class Mixup_discriminator(nn.Module):
-    def __init__(self, opt):   
+    def __init__(self, opt):  
+        super(Mixup_discriminator, self).__init__() 
         self.opt = opt     
         self.conv1 = nn.Conv1d(1, 16, 3)
         self.conv2 = nn.Conv1d(1, 8, 3)
