@@ -174,7 +174,7 @@ for epoch in range(1, opt['num_epoch'] + 1):
     duration = time.time() - start_time
     print(format_str.format(datetime.now(), global_step, max_steps, epoch, \
                                     opt['num_epoch'], train_loss/len(train_batch), duration, current_lr))
-    print('batch_dis_loss: {}'.format(sum(trainer.epoch_dis_loss))/len(trainer.epoch_dis_loss))
+    print('batch_dis_loss: {}'.format(sum(trainer.epoch_dis_loss)/len(trainer.epoch_dis_loss)))
     if i%5==0:
         print("batch_rec_loss: ", sum(trainer.epoch_rec_loss)/len(trainer.epoch_rec_loss))
         print("batch_dgi_loss: ", sum(trainer.epoch_dgi_loss) / len(trainer.epoch_dgi_loss))
