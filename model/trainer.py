@@ -194,8 +194,9 @@ class DGITrainer(Trainer):
         else :
             mixup_real, mixup_fake = self.model.DGI(self.user_hidden_out, self.item_hidden_out, fake_user_hidden_out,
                                             fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated,
-                                            relation_UV_adj, relation_VU_adj).detach()
-
+                                            relation_UV_adj, relation_VU_adj)
+            mixup_real = mixup_real.detach()
+            mixup_fake = mixup_fake.detach()
             discriminator_loss = -torch.mean(self.discriminator(mixup_real)) + torch.mean(self.discriminator(mixup_fake))
             discriminator_loss.backward()
             self.optimizer_D.step()
