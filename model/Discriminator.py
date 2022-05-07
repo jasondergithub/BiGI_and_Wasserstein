@@ -16,6 +16,6 @@ class Mixup_discriminator(nn.Module):
         output = self.relu(output)
         output = self.conv2(output)
         output = self.relu(output)
-        output = output.reshape(self.opt["hidden_dim"], -1)
+        output = output.reshape(self.opt["batch_size"], -1)
         output = self.fc(output)
         return output
