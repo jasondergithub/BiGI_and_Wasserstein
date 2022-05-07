@@ -1,0 +1,5 @@
+# epoch	train_loss	dev_loss	dev_score	best_dev_score
+5	0.079717	0.1298	0.1298
+new best model saved at epoch 5: 12.98	4.50	49.79	12.34
+10	0.081669	0.1381	0.1381
+new best model saved at epoch 10: 13.81	4.96	52.23	13.26
