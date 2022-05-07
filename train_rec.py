@@ -169,13 +169,15 @@ for epoch in range(1, opt['num_epoch'] + 1):
     start_time = time.time()
     for i, batch in enumerate(train_batch):
         global_step += 1
-        loss = trainer.reconstruct(UV, VU, UV_rated, VU_rated, relation_UV_adj, relation_VU_adj, adj, corruption_UV, corruption_VU, fake_adj, batch)  # [ [user_list], [item_list], [neg_item_list] ]
+        loss = trainer.reconstruct(UV, VU, UV_rated, VU_rated, relation_UV_adj, relation_VU_adj, adj, corruption_UV, corruption_VU, fake_adj, batch, i)  # [ [user_list], [item_list], [neg_item_list] ]
         train_loss += loss
     duration = time.time() - start_time
     print(format_str.format(datetime.now(), global_step, max_steps, epoch, \
                                     opt['num_epoch'], train_loss/len(train_batch), duration, current_lr))
-    print("batch_rec_loss: ", sum(trainer.epoch_rec_loss)/len(trainer.epoch_rec_loss))
-    print("batch_dgi_loss: ", sum(trainer.epoch_dgi_loss) / len(trainer.epoch_dgi_loss))
+    print('batch_dis_loss: {}'.format(sum(trainer.epoch_dis_loss))/len(trainer.epoch_dis_loss))
+    if i%5==0:
+        print("batch_rec_loss: ", sum(trainer.epoch_rec_loss)/len(trainer.epoch_rec_loss))
+        print("batch_dgi_loss: ", sum(trainer.epoch_dgi_loss) / len(trainer.epoch_dgi_loss))
     trainer.epoch_rec_loss = []
     trainer.epoch_dgi_loss = []
     if epoch % 5:

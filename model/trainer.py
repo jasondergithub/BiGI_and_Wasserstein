@@ -44,13 +44,17 @@ class DGITrainer(Trainer):
         self.opt = opt
         self.model = BiGI(opt)
         self.discriminator = Mixup_discriminator(opt)
+        self.linear_dis = nn.Linear(opt["hidden_dim"], 1)
         self.criterion = nn.BCEWithLogitsLoss()
         if opt['cuda']:
             self.model.cuda()
+            self.linear_dis.cuda()
             self.discriminator.cuda()
             self.criterion.cuda()
-        self.optimizer = torch_utils.get_optimizer(opt['optim'], self.model.parameters(), opt['lr'])
+        self.optimizer_D = torch_utils.get_optimizer(opt['optim'], self.discriminator.parameters(), opt['lr'])
+        self.optimizer_G = torch_utils.get_optimizer(opt['optim'], self.model.parameters(), opt['lr'])
         self.rankingLoss = nn.MarginRankingLoss(margin=opt["margin"])
+        self.epoch_dis_loss = []
         self.epoch_rec_loss = []
         self.epoch_dgi_loss = []
 
@@ -149,9 +153,9 @@ class DGITrainer(Trainer):
         ans = ans.view(tmp)
         return ans
 
-    def reconstruct(self, UV, VU, UV_rated, VU_rated, relation_UV_adj, relation_VU_adj, adj, CUV, CVU, fake_adj, batch):
-        self.model.train()
-        self.optimizer.zero_grad()
+    def reconstruct(self, UV, VU, UV_rated, VU_rated, relation_UV_adj, relation_VU_adj, adj, CUV, CVU, fake_adj, batch, i):
+        self.discriminator.train()
+        self.optimizer_D.zero_grad()
 
         self.update_bipartite(CUV, CVU, fake_adj, fake = 1)
         fake_user_hidden_out = self.user_hidden_out
@@ -167,21 +171,6 @@ class DGITrainer(Trainer):
         else :
             user_One, item_One, neg_item_One = self.unpack_batch(batch, self.opt[
                 "cuda"])
-
-        user_feature_Two = self.my_index_select(user_hidden_out, user_One)
-        item_feature_Two = self.my_index_select(item_hidden_out, item_One)
-        neg_item_feature_Two = self.my_index_select(item_hidden_out, neg_item_One)
-
-        pos_One = self.model.score(torch.cat((user_feature_Two, item_feature_Two), dim=1))
-        neg_One = self.model.score(torch.cat((user_feature_Two, neg_item_feature_Two), dim=1))
-
-        if self.opt["wiki"]:
-            Label = torch.cat((torch.ones_like(pos_One), torch.zeros_like(neg_One))).cuda()
-            pre = torch.cat((pos_One, neg_One))
-            reconstruct_loss = self.criterion(pre, Label)
-        else:
-            reconstruct_loss = self.rankingLoss(pos_One, neg_One, torch.tensor([1]).cuda())
-
 
         if self.opt["number_user"] * self.opt["number_item"] > 10000000:
             real_user_index_id_Three = self.my_index_select(user_hidden_out, real_user_index_id_Two)
@@ -207,13 +196,41 @@ class DGITrainer(Trainer):
                                             fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated,
                                             relation_UV_adj, relation_VU_adj)
 
-            dgi_loss = -torch.mean(self.discriminator(mixup_real)) + torch.mean(self.discriminator(mixup_fake))
-            loss = (1 - self.opt["lambda"]) * reconstruct_loss + self.opt["lambda"] * dgi_loss
-            self.epoch_rec_loss.append((1 - self.opt["lambda"]) * reconstruct_loss.item())
-            self.epoch_dgi_loss.append(self.opt["lambda"] * dgi_loss.item())
+            discriminator_loss = -torch.mean(self.discriminator(mixup_real)) + torch.mean(self.discriminator(mixup_fake))
+            discriminator_loss.backward()
+            optimizer_D.step()
+            for p in self.discriminator.parameters():
+                p.data.clamp(-0.01, 0.01)   
+            totalLoss = discriminator_loss.item()
+            self.epoch_dis_loss.append(totalLoss)
+            if i%5==0:
+                self.model.train()
+                self.optimizer_G.zero_grad()
 
-        loss.backward()
-        self.optimizer.step()
-        for p in self.discriminator.parameters():
-            p.data.clamp(-0.01, 0.01)
-        return loss.item()
+                user_feature_Two = self.my_index_select(user_hidden_out, user_One)
+                item_feature_Two = self.my_index_select(item_hidden_out, item_One)
+                neg_item_feature_Two = self.my_index_select(item_hidden_out, neg_item_One)
+
+                pos_One = self.model.score(torch.cat((user_feature_Two, item_feature_Two), dim=1))
+                neg_One = self.model.score(torch.cat((user_feature_Two, neg_item_feature_Two), dim=1))    
+
+                if self.opt["wiki"]:
+                    Label = torch.cat((torch.ones_like(pos_One), torch.zeros_like(neg_One))).cuda()
+                    pre = torch.cat((pos_One, neg_One))
+                    reconstruct_loss = self.criterion(pre, Label)
+                else:
+                    reconstruct_loss = self.rankingLoss(pos_One, neg_One, torch.tensor([1]).cuda())  
+
+                real_sub_prob = self.linear_dis(mixup_real)
+                fake_sub_prob = self.linear_dis(mixup_fake)
+                prob = torch.cat((real_sub_prob, fake_sub_prob))
+                label = torch.cat((torch.ones_like(real_sub_prob), torch.zeros_like(fake_sub_prob)))
+                dgi_loss = self.criterion(prob, label)
+                generator_loss = (1 - self.opt["lambda"]) * reconstruct_loss + self.opt["lambda"] * dgi_loss
+                generator_loss.backward()
+                self.optimizer_G.step()
+                self.epoch_rec_loss.append((1 - self.opt["lambda"]) * reconstruct_loss.item())
+                self.epoch_dgi_loss.append(self.opt["lambda"] * dgi_loss.item())
+                totalLoss = discriminator_loss.item() + generator_loss.item()
+            
+            return totalLoss
