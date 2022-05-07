@@ -198,11 +198,12 @@ class DGITrainer(Trainer):
 
             discriminator_loss = -torch.mean(self.discriminator(mixup_real)) + torch.mean(self.discriminator(mixup_fake))
             discriminator_loss.backward()
-            optimizer_D.step()
+            self.optimizer_D.step()
             for p in self.discriminator.parameters():
                 p.data.clamp(-0.01, 0.01)   
             totalLoss = discriminator_loss.item()
             self.epoch_dis_loss.append(totalLoss)
+            
             if i%5==0:
                 self.model.train()
                 self.optimizer_G.zero_grad()
