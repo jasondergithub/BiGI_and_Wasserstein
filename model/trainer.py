@@ -160,6 +160,7 @@ class DGITrainer(Trainer):
 
         virtual_user_hidden_out = Variable(torch.cuda.FloatTensor(np.random.normal(0, 1, (self.opt["number_user"], self.opt["hidden_dim"]))))
         virtual_item_hidden_out = Variable(torch.cuda.FloatTensor(np.random.normal(0, 1, (self.opt["number_item"], self.opt["hidden_dim"]))))
+        virtual_fake_user_hidden_out = Variable(torch.cuda.FloatTensor(np.random.normal(0, 1, (self.opt["number_user"], self.opt["hidden_dim"]))))
         virtual_fake_item_hidden_out = Variable(torch.cuda.FloatTensor(np.random.normal(0, 1, (self.opt["number_item"], self.opt["hidden_dim"]))))
         if self.opt["number_user"] * self.opt["number_item"] > 10000000:
             user_One, item_One, neg_item_One, User_index_One, Item_index_One, real_user_index_id_Two, fake_user_index_id_Two, real_item_index_id_Two, fake_item_index_id_Two  = self.unpack_batch_DGI(batch, self.opt[
@@ -189,7 +190,7 @@ class DGITrainer(Trainer):
 
         else :
             virtual_real, virtual_fake = self.model.DGI(virtual_user_hidden_out, virtual_item_hidden_out, virtual_fake_user_hidden_out,
-                                            fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated,
+                                            virtual_fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated,
                                             relation_UV_adj, relation_VU_adj)
             virtual_real = virtual_real.detach()
             virtual_fake = virtual_fake.detach()
