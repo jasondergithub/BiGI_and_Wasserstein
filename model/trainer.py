@@ -188,8 +188,8 @@ class DGITrainer(Trainer):
 
 
         else :
-            virtual_real, virtual_fake = self.model.DGI(virtual_user_hidden_out, virtual_item_hidden_out, fake_user_hidden_out,
-                                            fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated,
+            virtual_real, virtual_fake = self.model.DGI(virtual_user_hidden_out, virtual_item_hidden_out, fake_user_hidden_out, \
+                                            fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated, \
                                             relation_UV_adj, relation_VU_adj)
             virtual_real = virtual_real.detach()
             virtual_fake = virtual_fake.detach()
@@ -228,8 +228,8 @@ class DGITrainer(Trainer):
                 else:
                     reconstruct_loss = self.rankingLoss(pos_One, neg_One, torch.tensor([1]).cuda())  
                 
-                mixup_real, mixup_fake = self.model.DGI(self.user_hidden_out, self.item_hidden_out, fake_user_hidden_out,
-                                        fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated,
+                mixup_real, mixup_fake = self.model.DGI(self.user_hidden_out, self.item_hidden_out, fake_user_hidden_out, \
+                                        fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated, \
                                         relation_UV_adj, relation_VU_adj)
                 
                 real_sub_prob = self.discriminator(mixup_real)
