@@ -158,8 +158,8 @@ class DGITrainer(Trainer):
         self.discriminator.train()
         self.optimizer_D.zero_grad()
 
-        virtual_user_hidden_out = Variable(torch.cuda.FloatTensor(np.random.normal(0, 1, (opt["num_user"], opt["hidden_dim"]))))
-        virtual_item_hidden_out = Variable(torch.cuda.FloatTensor(np.random.normal(0, 1, (opt["num_item"], opt["hidden_dim"]))))
+        virtual_user_hidden_out = Variable(torch.cuda.FloatTensor(np.random.normal(0, 1, (self.opt["num_user"], self.opt["hidden_dim"]))))
+        virtual_item_hidden_out = Variable(torch.cuda.FloatTensor(np.random.normal(0, 1, (self.opt["num_item"], self.opt["hidden_dim"]))))
 
         if self.opt["number_user"] * self.opt["number_item"] > 10000000:
             user_One, item_One, neg_item_One, User_index_One, Item_index_One, real_user_index_id_Two, fake_user_index_id_Two, real_item_index_id_Two, fake_item_index_id_Two  = self.unpack_batch_DGI(batch, self.opt[
