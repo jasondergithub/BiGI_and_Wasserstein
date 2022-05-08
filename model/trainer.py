@@ -223,8 +223,8 @@ class DGITrainer(Trainer):
                 else:
                     reconstruct_loss = self.rankingLoss(pos_One, neg_One, torch.tensor([1]).cuda())  
 
-                real_sub_prob = self.linear_dis(mixup_real)
-                fake_sub_prob = self.linear_dis(mixup_fake)
+                real_sub_prob = self.discriminator(mixup_real)
+                fake_sub_prob = self.discriminator(mixup_fake)
                 prob = torch.cat((real_sub_prob, fake_sub_prob))
                 label = torch.cat((torch.ones_like(real_sub_prob), torch.zeros_like(fake_sub_prob)))
                 dgi_loss = self.criterion(prob, label)
