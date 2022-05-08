@@ -194,10 +194,12 @@ class DGITrainer(Trainer):
                                             relation_UV_adj, relation_VU_adj)
             virtual_real = virtual_real.detach()
             virtual_fake = virtual_fake.detach()
-            real_label = torch.ones_like(virtual_real)
-            fake_label = torch.zeros_like(virtual_fake)
+            real_feature = self.discriminator(virtual_real)
+            fake_feature = self.discriminator(virtual_fake)
+            real_label = torch.ones_like(real_feature)
+            fake_label = torch.zeros_like(fake_feature)
 
-            discriminator_loss = self.criterion(self.discriminator(virtual_real), real_label) + self.criterion(self.discriminator(virtual_fake), fake_label)
+            discriminator_loss = self.criterion(real_feature, real_label) + self.criterion(fake_feature, fake_label)
             discriminator_loss.backward()
             self.optimizer_D.step()
             
