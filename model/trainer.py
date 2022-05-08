@@ -222,12 +222,19 @@ class DGITrainer(Trainer):
                     reconstruct_loss = self.criterion(pre, Label)
                 else:
                     reconstruct_loss = self.rankingLoss(pos_One, neg_One, torch.tensor([1]).cuda())  
-
+                
+                mixup_real, mixup_fake = self.model.DGI(self.user_hidden_out, self.item_hidden_out, fake_user_hidden_out,
+                                        fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated,
+                                        relation_UV_adj, relation_VU_adj)
+                
                 real_sub_prob = self.discriminator(mixup_real)
                 fake_sub_prob = self.discriminator(mixup_fake)
-                prob = torch.cat((real_sub_prob, fake_sub_prob))
-                label = torch.cat((torch.ones_like(real_sub_prob), torch.zeros_like(fake_sub_prob)))
-                dgi_loss = self.criterion(prob, label)
+                
+                real_label = torch.ones_like(real_sub_prob)
+                fake_label = torch.zeros_like(fake_sub_prob)
+                real_loss = self.criterion(real_sub_prob, real_label)
+                fake_loss = self.criterion(fake_sub_prob, fake_label)
+                dgi_loss = (real_loss + fake_loss) / 2
                 generator_loss = (1 - self.opt["lambda"]) * reconstruct_loss + self.opt["lambda"] * dgi_loss
                 generator_loss.backward()
                 self.optimizer_G.step()
