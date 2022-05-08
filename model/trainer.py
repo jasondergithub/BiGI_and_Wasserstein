@@ -241,7 +241,7 @@ class DGITrainer(Trainer):
                 real_sub_prob = self.discriminator(mixup_real)
                 fake_sub_prob = self.discriminator(mixup_fake)
                 
-                dgi_loss = -torch.mean(self.discriminator(real_sub_prob)) + torch.mean(self.discriminator(fake_sub_prob))
+                dgi_loss = -torch.mean(real_sub_prob) + torch.mean(fake_sub_prob)
                 generator_loss = (1 - self.opt["lambda"]) * reconstruct_loss + self.opt["lambda"] * dgi_loss
                 generator_loss.backward()
                 self.optimizer_G.step()
