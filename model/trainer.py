@@ -157,13 +157,8 @@ class DGITrainer(Trainer):
         self.discriminator.train()
         self.optimizer_D.zero_grad()
 
-        self.update_bipartite(CUV, CVU, fake_adj, fake = 1)
-        fake_user_hidden_out = self.user_hidden_out
-        fake_item_hidden_out = self.item_hidden_out
-
-        self.update_bipartite(UV, VU, adj)
-        user_hidden_out = self.user_hidden_out
-        item_hidden_out = self.item_hidden_out
+        virtual_user_hidden_out = Variable(Tensor(np.random.normal(0, 1, (opt["num_user"], opt["hidden_dim"]))))
+        virtual_item_hidden_out = Variable(Tensor(np.random.normal(0, 1, (opt["num_item"], opt["hidden_dim"]))))
 
         if self.opt["number_user"] * self.opt["number_item"] > 10000000:
             user_One, item_One, neg_item_One, User_index_One, Item_index_One, real_user_index_id_Two, fake_user_index_id_Two, real_item_index_id_Two, fake_item_index_id_Two  = self.unpack_batch_DGI(batch, self.opt[
@@ -192,14 +187,15 @@ class DGITrainer(Trainer):
 
 
         else :
-            mixup_real, mixup_fake = self.model.DGI(self.user_hidden_out, self.item_hidden_out, fake_user_hidden_out,
+            virtual_real, virtual_fake = self.model.DGI(virtual_user_hidden_out, virtual_item_hidden_out, fake_user_hidden_out,
                                             fake_item_hidden_out, UV, VU, CUV, CVU, user_One, item_One, UV_rated, VU_rated,
                                             relation_UV_adj, relation_VU_adj)
-            mixup_real = mixup_real.detach()
-            mixup_fake = mixup_fake.detach()
-            discriminator_loss = -torch.mean(self.discriminator(mixup_real)) + torch.mean(self.discriminator(mixup_fake))
+            virtual_real = virtual_real.detach()
+            virtual_fake = virtual_fake.detach()
+            discriminator_loss = -torch.mean(self.discriminator(virtual_real)) + torch.mean(self.discriminator(virtual_fake))
             discriminator_loss.backward()
             self.optimizer_D.step()
+            
             for p in self.discriminator.parameters():
                 p.data.clamp(-0.01, 0.01)   
             totalLoss = discriminator_loss.item()
@@ -208,6 +204,14 @@ class DGITrainer(Trainer):
             if i%5==0:
                 self.model.train()
                 self.optimizer_G.zero_grad()
+
+                self.update_bipartite(CUV, CVU, fake_adj, fake = 1)
+                fake_user_hidden_out = self.user_hidden_out
+                fake_item_hidden_out = self.item_hidden_out
+
+                self.update_bipartite(UV, VU, adj)
+                user_hidden_out = self.user_hidden_out
+                item_hidden_out = self.item_hidden_out
 
                 user_feature_Two = self.my_index_select(user_hidden_out, user_One)
                 item_feature_Two = self.my_index_select(item_hidden_out, item_One)
@@ -234,7 +238,7 @@ class DGITrainer(Trainer):
                 fake_label = torch.zeros_like(fake_sub_prob)
                 real_loss = self.criterion(real_sub_prob, real_label)
                 fake_loss = self.criterion(fake_sub_prob, fake_label)
-                dgi_loss = (real_loss + fake_loss) / 2
+                dgi_loss = (real_loss + fake_loss) 
                 generator_loss = (1 - self.opt["lambda"]) * reconstruct_loss + self.opt["lambda"] * dgi_loss
                 generator_loss.backward()
                 self.optimizer_G.step()
